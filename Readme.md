@@ -14,7 +14,9 @@
 Для запуска скрипта используйте следующую команду:
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/TTYEEW/simple-xray-core/refs/heads/main/xray-install | bash
+wget https://raw.githubusercontent.com/TTYEEW/simple-xray-core/main/xray-install -O xray-install
+chmod +x xray-install
+./xray-install
 ```
 > ⚠️ Скрипт протестирован на Ubuntu 22 и 24. На других дистрибутивах работа не гарантируется.
 
