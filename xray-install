@@ -13,6 +13,15 @@ sysctl -p
 echo "bbr включен"
 fi
 
+#Установка warp от Cloudflare(Согласно официальному руководству по веб-сайту по установке правого деформирования для вашей собственной системы, приведен следующий пример системы Ubuntu: )
+curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+sudo apt-get update && sudo apt-get install cloudflare-warp
+
+warp-cli registration new
+warp-cli mode proxy # --socks5 127.0.0.1:40000
+warp-cli connect
+
 # Устанавливаем ядро Xray
 bash -c "$(curl -4 -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install
 [ -f /usr/local/etc/xray/.keys ] && rm /usr/local/etc/xray/.keys
@@ -44,9 +53,27 @@ cat << EOF > /usr/local/etc/xray/config.json
             {
                 "type": "field",
                 "ip": [
-                    "geoip:cn"
+                    "geoip:cn",
+                    "geoip:private"
                 ],
                 "outboundTag": "block"
+            },
+            {
+                "type": "field",
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "block"
+            },
+            {
+                "type": "field",
+                "domain": [
+                    "geosite:category-gov-ru",
+                    "regexp:.*\\\\.ru$",
+                    "regexp:.*\\\\.su$",
+                    "geosite:openai"
+                ],
+                "outboundTag": "warp"
             }
         ]
     },
@@ -102,6 +129,18 @@ cat << EOF > /usr/local/etc/xray/config.json
         {
             "protocol": "blackhole",
             "tag": "block"
+        },
+        {
+            "tag": "warp",
+            "protocol": "socks",
+            "settings": {
+                "servers": [
+                {
+                    "address": "127.0.0.1",
+                    "port": 40000
+                }
+                ]
+            }
         }
     ],
     "policy": {

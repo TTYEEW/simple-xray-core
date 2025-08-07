@@ -2,62 +2,109 @@
 
 Вы все знакомы с такими панелями управления, как 3x-ui, Marzban и другими. Все эти панели являются всего лишь графическими надстройками над ядром X-ray и служат для удобного управления им, а также для создания подключений и настроек. Ядро же может работать без всяких панелей и управляться полностью через терминал. Основное преимущество использования «голого» ядра заключается в том, что вам не нужно заморачиваться с доменами и TLS-сертификатами. Само ядро можно установить и администрировать вручную с помощью официальной документации. Этот скрипт предназначен для упрощения этой задачи: он автоматически установит ядро на сервер, создаст конфигурационные файлы и несколько исполняемых файлов для удобного управления пользователями.
 
-## VPS для панели
-
-Для установки панели нам понадобится VPS-сервер. Приобрести его можно в [ishosting](https://bit.ly/3rOqvPE).  
-В сервисе доступны более 36 локаций. Если вам не нужна какая-то конкретная страна, выбирайте ту, что ближе к вам.
-
 ## Системные требования
 
 - 1 CPU  
 - 1 GB RAM  
 - 10 GB диска  
-- ОС Ubuntu 22 x64 или Ubuntu 24 x64
+- ОС Ubuntu 22 x64
 
 ## Как пользоваться скриптом
 
-Скрипт создавался и тестировался под ОС Ubuntu 22 x64 и Ubuntu 24 x64. На других ОС может работать некорректно. Чтобы скачать и запустить скрипт, используйте эту команду:
+Для запуска скрипта используйте следующую команду:
 
-```sh
-wget -qO- https://raw.githubusercontent.com/ServerTechnologies/simple-xray-core/refs/heads/main/xray-install | bash
+```bash
+wget -qO- https://raw.githubusercontent.com/TTYEEW/simple-xray-core/refs/heads/main/xray-install | bash
+```
+> ⚠️ Скрипт протестирован на Ubuntu 22 и 24. На других дистрибутивах работа не гарантируется.
+
+## Конфигурация Xray и маршрутизация через WARP
+
+После установки создаётся основной конфигурационный файл Xray:
+
+```
+/usr/local/etc/xray/config.json
+```
+
+В него уже включена настройка маршрутов с использованием Cloudflare WARP. По умолчанию, через WARP направляется трафик:
+
+- к государственным доменам
+- к доменам с окончаниями `.ru` и `.su`
+- к `openai.com`
+
+Пример правила маршрутизации:
+
+```json
+"rules": [
+  {
+    "type": "field",
+    "domain": [
+      "geosite:category-gov-ru",
+      "regexp:.*\\.ru$",
+      "regexp:.*\\.su$",
+      "geosite:openai"
+    ],
+    "outboundTag": "warp"
+  }
+]
 ```
 
 ## Команды для управления пользователями
 
 **Вывести список всех клиентов:**
 
-```sh
+```bash
 userlist
 ```
 
 **Вывести ссылку и QR-код для подключения основного пользователя:**
 
-```sh
+```bash
 mainuser
 ```
 
 **Создать нового пользователя:**
 
-```sh
+```bash
 newuser
 ```
 
 **Удалить пользователя:**
 
-```sh
+```bash
 rmuser
 ```
 
 **Создать ссылку для подключения:**
 
-```sh
+```bash
 sharelink
 ```
 
-В домашней папке пользователя будет создан файл `help` — в нём содержатся подсказки с описанием команд. Посмотреть его можно с помощью команды (нужно находиться в домашней папке пользователя):
+Подсказки по командам также доступны в домашней директории в файле `help`:
 
-```sh
+```bash
 cat help
+```
+
+## Удаление Xray и WARP
+
+Если потребуется удалить всё:
+
+```bash
+bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
+rm /usr/local/etc/xray/config.json
+rm /usr/local/etc/xray/.keys
+rm /usr/local/bin/userlist
+rm /usr/local/bin/mainuser
+rm /usr/local/bin/newuser
+rm /usr/local/bin/rmuser
+rm /usr/local/bin/sharelink
+warp-cli disconnect
+warp-cli unregister
+systemctl stop warp-svc
+systemctl disable warp-svc
+apt purge --autoremove cloudflare-warp -y
 ```
 
 ## Полезные ссылки
@@ -97,15 +144,3 @@ cat help
 - [Nekoray](https://github.com/MatsuriDayo/nekoray)  
 - [v2rayA](https://github.com/v2rayA/v2rayA)  
 - [Furious](https://github.com/LorenEteval/Furious)  
-
-## Если вдруг нужно удалить, то воспользуйтесь этими командами:
-```sh
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ remove
-rm /usr/local/etc/xray/config.json
-rm /usr/local/etc/xray/.keys
-rm /usr/local/bin/userlist
-rm /usr/local/bin/mainuser
-rm /usr/local/bin/newuser
-rm /usr/local/bin/rmuser
-rm /usr/local/bin/sharelink
-```
